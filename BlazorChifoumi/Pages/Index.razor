@@ -1,0 +1,108 @@
+﻿@page "/"
+@using System.IO
+@using System.Timers
+@using BlazorChifoumiML.Model
+@using Microsoft.ML
+@using WpfGridLayout.Blazor
+@inject IJSRuntime JsRuntime
+
+
+<Grid>
+    <RowDefinitions>
+        <RowDefinition></RowDefinition>
+        <RowDefinition></RowDefinition>
+        <RowDefinition></RowDefinition>
+    </RowDefinitions>
+    <ColumnDefinitions>
+        <ColumnDefinition></ColumnDefinition>
+        <ColumnDefinition></ColumnDefinition>
+        <ColumnDefinition></ColumnDefinition>
+    </ColumnDefinitions>
+    <Content>
+        <GridElement Column="2">
+            <video id="video" playsinline autoplay></video>
+
+        </GridElement>
+        <GridElement Column="3" HorizontalAlignment="@Alignment.Center" VerticalAlignment="@Alignment.Center">
+            <img src="@CurrentImage" />
+        </GridElement>
+        <GridElement Row="2" Column="2" HorizontalAlignment="@Alignment.Center">
+            <canvas id="capturedImage" width="200" height="200" style="display: none"></canvas>
+        </GridElement>
+        <GridElement Row="3">
+            <button @onclick="StartCamera">CAMERA ON</button>
+            <button @onclick="Snap">SNAP</button>
+        </GridElement>
+    </Content>
+</Grid>
+
+
+@code{
+    MLContext mlContext = new MLContext();
+    PredictionEngine<ModelInput, ModelOutput> predEngine;
+    Timer timer = new Timer();
+
+    protected override async Task OnInitializedAsync() {
+        // Load model & create prediction engine
+        string modelPath = @"C:\temp\BlazorChifoumi\BlazorChifoumiML.Model\MLModel.zip";
+        ITransformer mlModel = mlContext.Model.Load(modelPath, out var modelInputSchema);
+        predEngine = mlContext.Model.CreatePredictionEngine<ModelInput, ModelOutput>(mlModel);
+
+        timer.Interval = 600;
+        timer.Elapsed += (sender, args) => Snap();
+    }
+
+
+    private string CurrentImage
+    {
+        get
+        {
+            switch (Signe) {
+                case "pierre":
+                    return "images/humain/pierre.png";
+                case "feuille":
+                    return "images/humain//feuille.png";
+                case "ciseaux":
+                    return "images/humain/ciseaux.png";
+                default:
+                    return "";
+            }
+        }
+    }
+
+    public string Signe { get; set; }
+
+    // Start camera capture
+    private async Task StartCamera() {
+        await JsRuntime.InvokeVoidAsync("Initialize", new Dictionary<string, string>
+        {
+            {"video", "video"}
+        });
+
+        timer.Enabled = true;
+        timer.Start();
+    }
+
+    private bool Predicting = false;
+
+    private async Task Snap() {
+        if (Predicting)
+            return;
+
+        Predicting = true;
+        Console.WriteLine("Taking picture");
+        await JsRuntime.InvokeVoidAsync("Snap", "video", "capturedImage");
+        var imageBytes = await JsRuntime.InvokeAsync<string>("GetImageData", "capturedImage", "image/jpeg");
+        var data = Convert.FromBase64String(imageBytes);
+
+        //var file = "c:\\temp\\capture\\" + Guid.NewGuid() + ".png";
+        var file = "c:\\temp\\capture\\data.png";
+        File.WriteAllBytes(file, data);
+
+        ModelInput input = new ModelInput() { ImageSource = file };
+        ModelOutput result = predEngine.Predict(input);
+        Signe = result.Prediction;
+        Predicting = false;
+        await InvokeAsync(StateHasChanged);
+    }
+}

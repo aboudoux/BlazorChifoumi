@@ -1,0 +1,138 @@
+﻿@page "/Counter"
+@using System.IO
+@using System.Threading
+@using System.Timers
+@using BlazorChifoumiML.Model
+@using Microsoft.ML
+@using WpfGridLayout.Blazor
+@using BlazorChifoumi
+
+@inject IJSRuntime JsRuntime
+
+
+<Grid>
+    <RowDefinitions>
+        <RowDefinition Height="50"></RowDefinition>
+        <RowDefinition></RowDefinition>
+        <RowDefinition Height="50"></RowDefinition>
+        <RowDefinition Height="300"></RowDefinition>
+        <RowDefinition Height="50"></RowDefinition>
+    </RowDefinitions>
+    <ColumnDefinitions>
+        <ColumnDefinition></ColumnDefinition>
+        <ColumnDefinition Width="3*"></ColumnDefinition>
+        <ColumnDefinition></ColumnDefinition>
+    </ColumnDefinitions>
+    <Content>
+        <GridElement Row="1" Column="1" HorizontalAlignment="@Alignment.Center">
+            <h1>Machine</h1>
+        </GridElement>
+        <GridElement Row="1" Column="3" HorizontalAlignment="@Alignment.Center">
+            <h1>Humain</h1>
+        </GridElement>
+
+        <GridElement Row="2" Column="1" HorizontalAlignment="@Alignment.Center" VerticalAlignment="@Alignment.Center">
+            <Animation Effect="@Effect.Tada" Enabled="@(_game.MatchStatus == MatchStatus.MachineWin)" Speed="@TimeSpan.FromSeconds(1)">
+                <img src="@("images/machine/" + _game.MachineHand.ToImage())" style="width: 100px; height: 100px;" />
+            </Animation>
+
+        </GridElement>
+        <GridElement Row="2" Column="2">
+            <video id="video" playsinline autoplay></video>
+            <canvas id="capturedImage" width="200" height="200" style="display: none;"></canvas>
+        </GridElement>
+        <GridElement Row="2" Column="3" HorizontalAlignment="@Alignment.Center" VerticalAlignment="@Alignment.Center">
+            <Animation Effect="@Effect.Tada" Enabled="@(_game.MatchStatus == MatchStatus.HumanWin)" Speed="@TimeSpan.FromSeconds(1)">
+                <img src="@("images/humain/" + _game.HumanHand.ToImage())" style="width: 100px; height: 100px;" />
+            </Animation>
+        </GridElement>
+
+        <GridElement Row="3" Column="1" HorizontalAlignment="@Alignment.Center">
+            <h3>@_game.MachineScore</h3>
+        </GridElement>
+        <GridElement Row="3" Column="2" HorizontalAlignment="@Alignment.Center">
+            <h1>@_game.Status</h1>
+        </GridElement>
+        <GridElement Row="3" Column="3" HorizontalAlignment="@Alignment.Center">
+            <h3>@_game.HumanScore</h3>
+        </GridElement>
+
+        <GridElement Row="5" Column="1">
+            <button @onclick="StartCamera">CAMERA ON</button>
+        </GridElement>
+        <GridElement Row="5" Column="2">
+            <button @onclick="Play">PLAY</button>
+            <button @onclick="Clear">Clear</button>
+        </GridElement>
+    </Content>
+</Grid>
+
+
+@code{
+    MLContext mlContext = new MLContext();
+    PredictionEngine<ModelInput, ModelOutput> predEngine;
+    Game _game = new Game();
+
+    protected override async Task OnInitializedAsync() {
+        string modelPath = @"C:\temp\BlazorChifoumi\BlazorChifoumiML.Model\MLModel.zip";
+        ITransformer mlModel = mlContext.Model.Load(modelPath, out var modelInputSchema);
+        predEngine = mlContext.Model.CreatePredictionEngine<ModelInput, ModelOutput>(mlModel);
+        _game.Go += Go;
+        _game.CountDown += (sender, args) => InvokeAsync(StateHasChanged);
+    }
+
+    private async void Go(object? sender, EventArgs e) {
+        await InvokeAsync(StateHasChanged);
+
+        Thread.Sleep(500);
+        var humanHand = await Snap();
+        _game.Evaluate(humanHand);
+
+
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public void Play() {
+        _game.Start();
+    }
+
+    private void Clear() {
+        _game.Clear();
+    }
+
+
+    private async Task StartCamera() {
+        await JsRuntime.InvokeVoidAsync("Initialize", new Dictionary<string, string>
+        {
+            {"video", "video"}
+        });
+    }
+
+    private async Task<Hand> Snap() {
+        Console.WriteLine("Taking picture");
+        await JsRuntime.InvokeVoidAsync("Snap", "video", "capturedImage");
+        var imageBytes = await JsRuntime.InvokeAsync<string>("GetImageData", "capturedImage", "image/jpeg");
+        var data = Convert.FromBase64String(imageBytes);
+
+        var file = "c:\\temp\\capture\\data.png";
+        File.WriteAllBytes(file, data);
+
+        ModelInput input = new ModelInput() { ImageSource = file };
+        ModelOutput result = predEngine.Predict(input);
+
+        return GetHand(result.Prediction);
+    }
+
+    private Hand GetHand(string prediction) {
+        switch (prediction) {
+            case "pierre":
+                return Hand.pierre;
+            case "feuille":
+                return Hand.feuille;
+            case "ciseaux":
+                return Hand.ciseaux;
+            default:
+                throw new Exception("cannot make prediction");
+        }
+    }
+}

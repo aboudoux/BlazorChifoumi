@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29920.165
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "BlazorChifoumi", "BlazorChifoumi\BlazorChifoumi.csproj", "{02CB02F9-505B-4CC8-9DFC-4F75FCB748CE}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "BlazorChifoumiML.Model", "BlazorChifoumiML.Model\BlazorChifoumiML.Model.csproj", "{E5608BE6-2BE5-4D9D-981D-2805DCC3877E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{02CB02F9-505B-4CC8-9DFC-4F75FCB748CE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{02CB02F9-505B-4CC8-9DFC-4F75FCB748CE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{02CB02F9-505B-4CC8-9DFC-4F75FCB748CE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{02CB02F9-505B-4CC8-9DFC-4F75FCB748CE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E5608BE6-2BE5-4D9D-981D-2805DCC3877E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E5608BE6-2BE5-4D9D-981D-2805DCC3877E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E5608BE6-2BE5-4D9D-981D-2805DCC3877E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E5608BE6-2BE5-4D9D-981D-2805DCC3877E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {3EF055C2-61F9-4A49-B2D6-5115E4EBEE6E}
+	EndGlobalSection
+EndGlobal
